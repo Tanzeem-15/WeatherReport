@@ -52,7 +52,6 @@ function normalizeCurrent(d) {
 }
 
 function normalizeForecast(d) {
-  // pick entries at around 12:00 each day (or the first entry per date)
   const byDate = {};
   for (const item of d.list || []) {
     const date = item.dt_txt.split(' ')[0];

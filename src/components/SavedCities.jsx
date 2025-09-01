@@ -1,10 +1,10 @@
 import React, { memo } from "react";
-import { List } from "react-window"; // v2 API
+import { List } from "react-window";
 
 
-const ROW_HEIGHT = 56;         // one row’s visual height
-const VISIBLE_ROWS = 3;        // show only 4 at a time
-const VIEWPORT_HEIGHT = ROW_HEIGHT * VISIBLE_ROWS + 8; // +8 for our wrapper padding
+const ROW_HEIGHT = 56;
+const VISIBLE_ROWS = 3;
+const VIEWPORT_HEIGHT = ROW_HEIGHT * VISIBLE_ROWS + 8;
 
 export default function SavedCities({ cities, onSelect, onRemove, active }) {
   const count = Array.isArray(cities) ? cities.length : 0;
@@ -24,7 +24,6 @@ export default function SavedCities({ cities, onSelect, onRemove, active }) {
       Number(c.lon) === Number(active.lon);
 
     return (
-      // IMPORTANT: add padding on the *wrapper* so the row width stays exact
       <div style={{ ...style, padding: "4px 0" }}>
         <div className={isActive ? "saved-item active" : "saved-item"}>
           <button
