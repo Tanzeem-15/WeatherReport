@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FaLocationArrow, FaRegStar, FaStar, FaSyncAlt } from 'react-icons/fa';
-
 import Forecast from './components/Forecast.jsx';
 import SavedCities from './components/SavedCities.jsx';
 import SearchBar from './components/SearchBar.jsx';
@@ -11,7 +10,7 @@ import { getCurrentWeather, getForecast, reverseGeocode } from './services/weath
 
 export default function App() {
   const [coords, setCoords] = useState(null);
-  const [units, setUnits] = useLocalStorage('units', 'metric'); // 'metric' | 'imperial'
+  const [units, setUnits] = useLocalStorage('units', 'metric');
   const [current, setCurrent] = useState(null);
   const [forecast, setForecast] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -23,122 +22,9 @@ export default function App() {
   const isSaved = useMemo(() => {
     if (!coords) return false;
     return saved.some(
-      (c) => Number(c.lat) === Number(coords.lat) && Number(c.lon) === Number(coords.lon),
+      c => Number(c.lat) === Number(coords.lat) && Number(c.lon) === Number(coords.lon),
     );
   }, [saved, coords]);
-
-  const handleSave = () => {
-    if (!coords || isSaved) return;
-    const next = [{ name: coords.name, lat: coords.lat, lon: coords.lon }, ...saved];
-    setSaved(next);
-  };
-
-  const handleRemove = (city) => {
-    setSaved(
-      saved.filter(
-        (c) => !(Number(c.lat) === Number(city.lat) && Number(c.lon) === Number(city.lon)),
-      ),
-    );
-  };
-
-  useEffect(() => {
-    if (!coords) return;
-    let alive = true;
-    (async () => {
-      await fetchWeather(coords);
-      if (!alive) return;
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [coords, fetchWeather]);
-
-  useEffect(() => {
-    let alive = true;
-
-    async function detect() {
-      if (!navigator.geolocation) {
-        setError('Geolocation not supported');
-        const fallback = { name: 'Bengaluru, IN', lat: 12.9716, lon: 77.5946 };
-        if (alive) setCoords(fallback);
-        setBootLoading(false);
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const { latitude, longitude } = pos.coords;
-          try {
-            const city = await reverseGeocode(latitude, longitude);
-            if (alive) setCoords(city);
-          } catch {
-            if (alive) setCoords({ name: 'My Location', lat: latitude, lon: longitude });
-          } finally {
-            if (alive) setBootLoading(false);
-          }
-        },
-        (err) => {
-          setError(err?.message || 'Unable to get location');
-          const fallback = { name: 'Bengaluru, IN', lat: 12.9716, lon: 77.5946 };
-          if (alive) setCoords(fallback);
-          setBootLoading(false);
-        },
-        { enableHighAccuracy: true, timeout: 8000 },
-      );
-    }
-
-    detect();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!coords) return;
-    let alive = true;
-    async function run() {
-      try {
-        setError('');
-        setLoading(true);
-        const cw = await getCurrentWeather(coords.lat, coords.lon, units);
-        const fc = await getForecast(coords.lat, coords.lon, units);
-        if (!alive) return;
-        setCurrent(cw);
-        setForecast(fc);
-      } catch (e) {
-        console.error(e);
-        setError(e?.message || 'Failed to fetch weather.');
-      } finally {
-        if (alive) setLoading(false);
-      }
-    }
-    run();
-    return () => {
-      alive = false;
-    };
-  }, [coords, units]);
-
-  const handleGeolocate = () => {
-    if (!navigator.geolocation) {
-      setError('Geolocation not supported');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        try {
-          const city = await reverseGeocode(latitude, longitude);
-          setCoords(city);
-        } catch (e) {
-          console.warn('Error:', e);
-          setError('Failed to get city name, using coordinates');
-          setCoords({ name: 'My Location', lat: latitude, lon: longitude });
-        }
-      },
-      (err) => setError(err?.message || 'Unable to get location'),
-      { enableHighAccuracy: true, timeout: 8000 },
-    );
-  };
 
   const fetchWeather = useCallback(
     async ({ lat, lon }, unitsSel) => {
@@ -161,10 +47,94 @@ export default function App() {
     [units],
   );
 
+  const handleSave = () => {
+    if (!coords || isSaved) return;
+    const next = [{ name: coords.name, lat: coords.lat, lon: coords.lon }, ...saved];
+    setSaved(next);
+  };
+
+  const handleRemove = city => {
+    setSaved(
+      saved.filter(
+        c => !(Number(c.lat) === Number(city.lat) && Number(c.lon) === Number(city.lon)),
+      ),
+    );
+  };
+
+  const handleGeolocate = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation not supported');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async pos => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const city = await reverseGeocode(latitude, longitude);
+          setCoords(city);
+        } catch (e) {
+          setError('Failed to get city name, using coordinates');
+          setCoords({ name: 'My Location', lat: latitude, lon: longitude });
+        }
+      },
+      err => setError(err?.message || 'Unable to get location'),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  };
+
   const handleRefresh = async () => {
     if (!coords) return;
     await fetchWeather(coords, units);
   };
+
+  useEffect(() => {
+    if (!coords) return;
+    let alive = true;
+    (async () => {
+      await fetchWeather(coords);
+      if (!alive) return;
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [coords, fetchWeather]);
+
+  useEffect(() => {
+    let alive = true;
+    async function detect() {
+      if (!navigator.geolocation) {
+        setError('Geolocation not supported');
+        const fallback = { name: 'Bengaluru, IN', lat: 12.9716, lon: 77.5946 };
+        if (alive) setCoords(fallback);
+        setBootLoading(false);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        async pos => {
+          const { latitude, longitude } = pos.coords;
+          try {
+            const city = await reverseGeocode(latitude, longitude);
+            if (alive) setCoords(city);
+          } catch {
+            if (alive) setCoords({ name: 'My Location', lat: latitude, lon: longitude });
+          } finally {
+            if (alive) setBootLoading(false);
+          }
+        },
+        err => {
+          setError(err?.message || 'Unable to get location');
+          const fallback = { name: 'Bengaluru, IN', lat: 12.9716, lon: 77.5946 };
+          if (alive) setCoords(fallback);
+          setBootLoading(false);
+        },
+        { enableHighAccuracy: true, timeout: 8000 },
+      );
+    }
+    detect();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   if (bootLoading || !coords) {
     return (
@@ -185,22 +155,19 @@ export default function App() {
         <h1>☁️ Weather Dashboard</h1>
         <div className="header-actions">
           <UnitToggle value={units} onChange={setUnits} />
-
           <button className="btn location-btn" onClick={handleGeolocate} title="Use my location">
             <FaLocationArrow />
             <span>My Location</span>
           </button>
-
           <button
             className="btn save-btn"
             onClick={handleSave}
             disabled={!coords || isSaved}
             title="Save city"
           >
-            {isSaved ? <FaStar color="gold" /> : <FaRegStar />}{' '}
+            {isSaved ? <FaStar color="gold" /> : <FaRegStar />}
             <span>{isSaved ? 'Saved' : 'Save'}</span>
           </button>
-
           <button
             className="btn refresh-btn"
             onClick={handleRefresh}
