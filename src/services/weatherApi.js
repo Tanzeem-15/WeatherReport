@@ -3,7 +3,9 @@ const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
 
 function ensureKey() {
   if (!API_KEY) {
-    throw new Error('Missing OpenWeather API key. Create a .env file with VITE_OPENWEATHER_API_KEY=YOUR_KEY');
+    throw new Error(
+      'Missing OpenWeather API key. Create a .env file with VITE_OPENWEATHER_API_KEY=YOUR_KEY',
+    );
   }
 }
 
@@ -15,7 +17,8 @@ export async function searchCity(query, limit = 5) {
   const data = await res.json();
   return data.map(({ name, lat, lon, state, country }) => ({
     name: [name, state, country].filter(Boolean).join(', '),
-    lat, lon
+    lat,
+    lon,
   }));
 }
 
@@ -47,7 +50,7 @@ function normalizeCurrent(d) {
     wind_speed: d.wind?.speed,
     wind_deg: d.wind?.deg,
     description: d.weather?.[0]?.description ?? '',
-    icon: d.weather?.[0]?.icon ?? '01d'
+    icon: d.weather?.[0]?.icon ?? '01d',
   };
 }
 
@@ -62,7 +65,7 @@ function normalizeForecast(d) {
         dt: item.dt * 1000,
         temp: item.main?.temp,
         description: item.weather?.[0]?.description ?? '',
-        icon: item.weather?.[0]?.icon ?? '01d'
+        icon: item.weather?.[0]?.icon ?? '01d',
       };
     }
   }
@@ -76,11 +79,11 @@ export async function reverseGeocode(lat, lon) {
   ensureKey();
   const url = `${API_BASE}/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${API_KEY}`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error("Failed to reverse geocode location");
+  if (!res.ok) throw new Error('Failed to reverse geocode location');
   const data = await res.json();
   if (!Array.isArray(data) || data.length === 0) {
-    return { name: "Unknown Location", lat, lon };
+    return { name: 'Unknown Location', lat, lon };
   }
   const { name, state, country } = data[0];
-  return { name: [name, state, country].filter(Boolean).join(", "), lat, lon };
+  return { name: [name, state, country].filter(Boolean).join(', '), lat, lon };
 }

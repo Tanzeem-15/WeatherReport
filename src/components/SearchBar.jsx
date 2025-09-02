@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+
 import { searchCity } from '../services/weatherApi.js';
 
 export default function SearchBar({ onSelectCity }) {
@@ -9,11 +10,15 @@ export default function SearchBar({ onSelectCity }) {
   const timer = useRef(null);
 
   useEffect(() => {
-    if (!q || q.length < 2) { setResults([]); return; }
+    if (!q || q.length < 2) {
+      setResults([]);
+      return;
+    }
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(async () => {
       try {
-        setError(''); setLoading(true);
+        setError('');
+        setLoading(true);
         const r = await searchCity(q, 6);
         setResults(r);
       } catch (e) {
@@ -54,7 +59,9 @@ export default function SearchBar({ onSelectCity }) {
         <ul className="dropdown">
           {results.map((c, idx) => (
             <li key={idx}>
-              <button className="link" onClick={() => handlePick(c)}>{c.name}</button>
+              <button className="link" onClick={() => handlePick(c)}>
+                {c.name}
+              </button>
             </li>
           ))}
         </ul>
